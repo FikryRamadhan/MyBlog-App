@@ -1,10 +1,10 @@
 // Model
 const user = require('../model/user')
-const { responseError, responseSuccess } = require('../myClass/response')
+const { responseError, responseSuccess, responseValidate } = require('../myClass/response')
 const bcrypt = require('bcrypt')
 
 // Validation
-const validations = require("../myClass/validation")
+const { createUserValidator } = require("../myClass/validation")
 
 const getAllUsers = async (req, res) => {
     try {
@@ -12,24 +12,24 @@ const getAllUsers = async (req, res) => {
 
         return responseSuccess(res, "Operation success", data)
     } catch (error) {
+        if (error.isJoi === true) responseValidate(res, error.message) 
         return responseError(res, error.message)
     }
 }
 
 const createUser = async (req, res) => {
     try {
-        validations.validationCreateUser(res, req.body)
-        const [data] = await user.create(req.body)
+        const result = await createUserValidator.validateAsync(req.body)
+        const [data] = await user.create(result)
         const [dataUser] = await user.getById(data.insertId)
 
         return responseSuccess(res, "Operation success", {
-            ...req.body,
+            ...result,
             role: dataUser[0].role,
             created_at: dataUser[0].created_at
         })
     } catch (error) {
-        console.log(error.message);
-        return responseError(res, "")
+        return responseError(res, error.message)
     }
 }
 

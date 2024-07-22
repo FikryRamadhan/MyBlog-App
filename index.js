@@ -13,8 +13,11 @@ const routeBorrowers = require('./route/borrower')
 const PORT = process.env.PORT || 3000
 const app = express()
 
+const authMidlleware =  require('./src/middleware/auth');
+
 // Midleware
 app.use(express.json());
+app.use(cors())
 
 app.use('/auth', routeAuth)
 // app.use('/books', routeBooks)

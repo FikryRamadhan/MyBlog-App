@@ -2,7 +2,7 @@ const { responseValidate } = require("../myClass/response");
 const env = require("dotenv");
 env.config()
 
-const verifyToken = (req, res, next) => {
+export const verifyToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]
     if(token == null) return res.sendStatus(401);
@@ -13,3 +13,4 @@ const verifyToken = (req, res, next) => {
         next()
     })
 }
+

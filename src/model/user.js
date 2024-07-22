@@ -20,8 +20,14 @@ const getById = (id) => {
     return dbPoll.execute(query)
 }
 
+const getEmailByEmail = ( email ) => {
+    const query = `SELECT email FROM users WHERE email='${email}'`
+    return dbPoll.execute(query)
+}
+
 module.exports = {
     getAll,
     create,
     getById,
+    getEmailByEmail
 }

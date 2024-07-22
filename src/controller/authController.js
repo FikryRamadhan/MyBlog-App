@@ -1,5 +1,5 @@
 const user = require('../model/user.js')
-const validations = require('../myClass/validation.js')
+const {authValidator, createUserValidator} = require('../myClass/validation.js')
 const { responseError, responseSuccess, responseValidate, responseCookie } = require('../myClass/response')
 const auth = require('../model/auth.js')
 const bcrypt = require('bcrypt')
@@ -9,14 +9,9 @@ env.config()
 
 const login = async (req, res) => {
     try {
-        validations.validationAuth(res, req.body);
-        const [checkUser] = await auth.checkAuth(req.body.email);
-
-        if (!checkUser[0]) {return responseValidate(res, "Login Failed")};
-
-        console.log(checkUser[0]);
-
-        const checkPassword = bcrypt.compareSync(req.body.password, checkUser[0].password)
+        const user = await authValidator.validateAsync(req.body);
+        const [checkUser] = await auth.checkAuth(user.email);
+        if(!checkUser[0]) return responseValidate(res, "User not found");
 
         const access_token = jwt.sign({
             id: checkUser[0].id,
@@ -34,7 +29,10 @@ const login = async (req, res) => {
             expiresIn: '1d'
         })
 
-        if (checkPassword == true) {
+        const checkPassword = bcrypt.compareSync(user.password, checkUser[0].password);
+       
+
+        if (checkPassword === true) {
             const date = new Date()
             date.setDate(date.getDate () + 1)
             const oneDay = date.toISOString().slice(0, 10);
@@ -48,17 +46,36 @@ const login = async (req, res) => {
                 token: access_token
             }
             return responseSuccess(res, "Login Berhasil", data)
-        } else {
-            return responseValidate(res, "Login Gagal")
+        } else{
+            return responseValidate(res,"Error in email/password")
         }
     } catch (error) {
-        console.log(error);
-        return responseError(res, "Server Error")
+        if(error.isJoi === true) return responseValidate(res, error.message)
+        return responseError(res, error.message)
     }
 
+}
+
+const register = async (req, res) => {
+    try {
+        const result = await createUserValidator.validateAsync(req.body)
+        const checkEmail = await user.getEmailByEmail(result.email)
+        if (checkEmail) return responseValidate(res, "Email Sudah Terdaftar") 
+        const [data] = await user.create(result)
+        const [dataUser] = await user.getById(data.insertId)
+
+        return responseSuccess(res, "Operation success", {
+            ...result,
+            role: dataUser[0].role,
+            created_at: dataUser[0].created_at
+        })
+    } catch (error) {
+        return responseError(res, error.message)
+    }
 }
 
 
 module.exports = {
     login,
+    register
 }
